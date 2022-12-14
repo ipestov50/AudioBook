@@ -75,7 +75,7 @@
                                             <preferredSymbolConfiguration key="preferredSymbolConfigurationForImage" weight="heavy"/>
                                         </buttonConfiguration>
                                         <connections>
-                                            <action selector="playButton:" destination="BYZ-38-t0r" eventType="touchUpInside" id="Wf9-og-Qbg"/>
+                                            <action selector="playButtonTapped:" destination="BYZ-38-t0r" eventType="touchUpInside" id="BFI-Kb-wB0"/>
                                         </connections>
                                     </button>
                                     <button opaque="NO" contentMode="scaleToFill" horizontalCompressionResistancePriority="749" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="u8c-lB-3KA">

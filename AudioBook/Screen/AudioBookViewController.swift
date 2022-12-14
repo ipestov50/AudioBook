@@ -27,54 +27,41 @@ class AudioBookViewController: UIViewController {
     @IBOutlet var forwardEndButton: UIButton!
     @IBOutlet var currentTimeLabel: UILabel!
     
-    
-    var player: AVPlayer?
-    var playerItem: AVPlayerItem?
-    fileprivate let seekDurationTen: Float64 = 10
-    fileprivate let seekDurationFive: Float64 = 5
-    var playerIndex = 0
-    
-    var audioBookService = AudioBookService()
+    let audiobookService = AudioBookService(chapters: [AudioBookChapter(name: "firstChapter"), AudioBookChapter(name: "secondChapter"), AudioBookChapter(name: "thirdChapter")])
     
     open override func viewDidLoad() {
         super.viewDidLoad()
-        setupAVPlayer()
-        setupUIButton()
+        setupDuration()
+        //        setupUIButton()
         setupSlider()
+        
         bookImageView.layer.cornerRadius = 8
         speedButton.layer.cornerRadius = 8
         playButton.translatesAutoresizingMaskIntoConstraints = false
     }
     
-    func setupAVPlayer() {
-        let playerItem: AVPlayerItem = AVPlayerItem(url: URL(fileURLWithPath: Bundle.main.path(forResource: audioBookService.chapters[playerIndex].name, ofType: "mp3")!))
-        player = AVPlayer(playerItem: playerItem)
+    func setupDuration() {
+        guard let audiobookService = audiobookService else { return }
         slider.minimumValue = 0
-        let duration: CMTime = playerItem.asset.duration
-        let seconds: Float64 = CMTimeGetSeconds(duration)
-        audioDurationLabel.text = self.stringFromTimeInterval(interval: seconds)
-        let currentDuration: CMTime = playerItem.currentTime()
-        let currentSeconds: Float64 = CMTimeGetSeconds(currentDuration)
-        currentTimeLabel.text = self.stringFromTimeInterval(interval: currentSeconds)
-        slider.maximumValue = Float(seconds)
+        audioDurationLabel.text = self.stringFromTimeInterval(interval: audiobookService.seconds)
+        currentTimeLabel.text = self.stringFromTimeInterval(interval: audiobookService.currentSeconds)
+        slider.maximumValue = Float(audiobookService.seconds)
         slider.isContinuous = true
-        player!.addPeriodicTimeObserver(forInterval: CMTimeMakeWithSeconds(1, preferredTimescale: 1), queue: DispatchQueue.main) { (CMTime) in
-            if self.player!.currentItem?.status == .readyToPlay {
-                let time: Float64 = CMTimeGetSeconds(self.player!.currentTime())
+        
+        audiobookService.player.addPeriodicTimeObserver(forInterval: CMTimeMakeWithSeconds(1, preferredTimescale: 1), queue: DispatchQueue.main) { (CMTime) in
+            if audiobookService.player.currentItem?.status == .readyToPlay {
+                let time: Float64 = CMTimeGetSeconds(audiobookService.player.currentTime())
                 self.slider.value = Float(time)
                 self.currentTimeLabel.text = self.stringFromTimeInterval(interval: time)
             }
-            let playbackLikelyToKeepUp = self.player?.currentItem?.isPlaybackLikelyToKeepUp
+            
+            let playbackLikelyToKeepUp = audiobookService.player.currentItem?.isPlaybackLikelyToKeepUp
             if playbackLikelyToKeepUp == false {
                 print("IsBuffering")
             } else {
                 self.playButton.isHidden = false
             }
         }
-    }
-    
-    @objc func finishedPlaying(_ myNotification: NSNotification) {
-        playButton.setImage(UIImage(systemName: "play.fill"), for: .normal)
     }
     
     func stringFromTimeInterval(interval: TimeInterval) -> String {
@@ -84,133 +71,107 @@ class AudioBookViewController: UIViewController {
         return String(format: "%02d:%02d", minutes, seconds)
     }
     
-}
-
-extension AudioBookViewController {
-    func setupUIButton() {
-        speedButton.layer.cornerRadius = 8
+    @IBAction func playButtonTapped(_ sender: UIButton) {
+        guard let audiobookService = audiobookService else { return }
+        
+        if audiobookService.player.rate == 0 {
+            audiobookService.player.play()
+            playButton.setImage(UIImage(systemName: "pause.fill"), for: .normal)
+        } else {
+            audiobookService.player.pause()
+            playButton.setImage(UIImage(systemName: "play.fill"), for: .normal)
+        }
     }
     
     @IBAction func speedButtonTapped() {
-        switch player!.rate {
+        guard let audiobookService = audiobookService else { return }
+        
+        switch audiobookService.player.rate {
         case 1..<2:
-            player!.rate += 0.25
-            speedButton.setTitle("Speed \(player!.rate)x", for: .normal)
+            audiobookService.player.rate += 0.25
+            speedButton.setTitle("Speed \(audiobookService.player.rate)x", for: .normal)
             playButton.setImage(UIImage(systemName: "pause.fill"), for: .normal)
         case 2:
-            player!.rate = 0.25
-            speedButton.setTitle("Speed \(player!.rate)x", for: .normal)
+            audiobookService.player.rate = 0.25
+            speedButton.setTitle("Speed \(audiobookService.player.rate)x", for: .normal)
             playButton.setImage(UIImage(systemName: "pause.fill"), for: .normal)
         default:
-            
-            player!.rate += 0.25
-            speedButton.setTitle("Speed \(player!.rate)x", for: .normal)
+            audiobookService.player.rate += 0.25
+            speedButton.setTitle("Speed \(audiobookService.player.rate)x", for: .normal)
             playButton.setImage(UIImage(systemName: "pause.fill"), for: .normal)
         }
     }
     
     @IBAction func forwardEndButtonTapped() {
-        if playerIndex == 0 || playerIndex < 2 {
-            playerIndex += 1
-        }
-        player = AVPlayer(url: URL(fileURLWithPath: Bundle.main.path(forResource: audioBookService.chapters[playerIndex].name, ofType: "mp3")!))
-        keypointLabel.text = "KEY POINT \(playerIndex+1) OF 3"
+        guard let audiobookService = audiobookService else { return }
+        audiobookService.setupforwardEndButton()
+        keypointLabel.text = "KEY POINT \(audiobookService.playerIndex+1) OF 3"
         playButton.setImage(UIImage(systemName: "pause.fill"), for: .normal)
-        let duration = player!.currentItem!.asset.duration
-        let seconds: Float64 = CMTimeGetSeconds(duration)
+                    let duration = audiobookService.player.currentItem!.asset.duration
+                    let seconds: Float64 = CMTimeGetSeconds(duration)
         audioDurationLabel.text = self.stringFromTimeInterval(interval: seconds)
         slider.maximumValue = Float(seconds)
         slider.isContinuous = true
-        player!.addPeriodicTimeObserver(forInterval: CMTimeMakeWithSeconds(1, preferredTimescale: 1), queue: DispatchQueue.main) { [self] (CMTime) in
-            if self.player!.currentItem?.status == .readyToPlay {
-                let time: Float64 = CMTimeGetSeconds(self.player!.currentTime())
+        
+        audiobookService.player.addPeriodicTimeObserver(forInterval: CMTimeMakeWithSeconds(1, preferredTimescale: 1), queue: DispatchQueue.main) { [self] (CMTime) in
+            if audiobookService.player.currentItem?.status == .readyToPlay {
+                let time: Float64 = CMTimeGetSeconds(audiobookService.player.currentTime())
                 self.slider.value = Float(time)
                 self.currentTimeLabel.text = self.stringFromTimeInterval(interval: time)
             }
         }
-        player!.play()
     }
     
     @IBAction func backwardEndButtonTapped() {
-        if playerIndex != 0 || playerIndex > 0 {
-            playerIndex -= 1
-        }
-        playButton.setImage(UIImage(systemName: "pause.fill"), for: .normal)
+        guard let audiobookService = audiobookService else { return }
+        audiobookService.setupbackwardEndButton()
         
-        player = AVPlayer(url: URL(fileURLWithPath: Bundle.main.path(forResource: audioBookService.chapters[playerIndex].name, ofType: "mp3")!))
-        keypointLabel.text = "KEY POINT \(playerIndex+1) OF 3"
         playButton.setImage(UIImage(systemName: "pause.fill"), for: .normal)
-        let duration = player!.currentItem!.asset.duration
+        keypointLabel.text = "KEY POINT \(audiobookService.playerIndex+1) OF 3"
+        playButton.setImage(UIImage(systemName: "pause.fill"), for: .normal)
+        let duration = audiobookService.player.currentItem!.asset.duration
         let seconds: Float64 = CMTimeGetSeconds(duration)
         audioDurationLabel.text = self.stringFromTimeInterval(interval: seconds)
         slider.maximumValue = Float(seconds)
         slider.isContinuous = true
-        player!.addPeriodicTimeObserver(forInterval: CMTimeMakeWithSeconds(1, preferredTimescale: 1), queue: DispatchQueue.main) { [self] (CMTime) in
-            if self.player!.currentItem?.status == .readyToPlay {
-                let time: Float64 = CMTimeGetSeconds(self.player!.currentTime())
+        audiobookService.player.addPeriodicTimeObserver(forInterval: CMTimeMakeWithSeconds(1, preferredTimescale: 1), queue: DispatchQueue.main) { [self] (CMTime) in
+            if audiobookService.player.currentItem?.status == .readyToPlay {
+                let time: Float64 = CMTimeGetSeconds(audiobookService.player.currentTime())
                 self.slider.value = Float(time)
                 self.currentTimeLabel.text = self.stringFromTimeInterval(interval: time)
             }
         }
-        player!.play()
     }
     
     @IBAction func seekBackWards(_ sender: AnyObject) {
-        if player == nil { return }
+        audiobookService?.setupSeekBackWardsButton()
         playButton.setImage(UIImage(systemName: "pause.fill"), for: .normal)
-        let playerCurrentTime = CMTimeGetSeconds(player!.currentTime())
-        var newTime = playerCurrentTime - seekDurationFive
-        if newTime < 0 { newTime = 0 }
-        player?.pause()
-        let selectedTime: CMTime = CMTimeMake(value: Int64(newTime * 1000 as Float64), timescale: 1000)
-        player?.seek(to: selectedTime)
-        player?.play()
-    }
-    
-    @IBAction func playButton(_ sender: AnyObject) {
-        print("play Button")
-        if player?.rate == 0 {
-            player!.play()
-            playButton.setImage(UIImage(systemName: "pause.fill"), for: .normal)
-        } else {
-            player!.pause()
-            playButton.setImage(UIImage(systemName: "play.fill"), for: .normal)
-        }
     }
     
     @IBAction func seekForward(_ sender: AnyObject) {
-        if player == nil { return }
+        audiobookService?.setupSeekForwarButton()
         playButton.setImage(UIImage(systemName: "pause.fill"), for: .normal)
-        if let duration = player!.currentItem?.duration {
-            let playerCurrentTime = CMTimeGetSeconds(player!.currentTime())
-            let newTime = playerCurrentTime + seekDurationTen
-            if newTime < CMTimeGetSeconds(duration)
-            {
-                let selectedTime: CMTime = CMTimeMake(value: Int64(newTime * 1000 as Float64), timescale: 1000)
-                player!.seek(to: selectedTime)
-            }
-            player?.pause()
-            player?.play()
+    }
+    
+    @objc func sliderValueChanged(_ slider: UISlider) {
+        guard let audiobookService = audiobookService else { return }
+        let seconds : Int64 = Int64(slider.value)
+        let targetTime:CMTime = CMTimeMake(value: seconds, timescale: 1)
+        audiobookService.player.seek(to: targetTime)
+        if audiobookService.player.rate == 0 {
+            playButton.setImage(UIImage(systemName: "pause.fill"), for: .normal)
+            audiobookService.player.play()
         }
     }
     
-}
-
-extension AudioBookViewController {
-    
-    @objc func sliderValueChanged(_ slider: UISlider) {
-        let seconds : Int64 = Int64(slider.value)
-        let targetTime:CMTime = CMTimeMake(value: seconds, timescale: 1)
-        player!.seek(to: targetTime)
-        if player!.rate == 0 {
-            playButton.setImage(UIImage(systemName: "pause.fill"), for: .normal)
-            player?.play()
-        }
+    @objc func finishedPlaying(_ myNotification: NSNotification) {
+        playButton.setImage(UIImage(systemName: "play.fill"), for: .normal)
     }
     
     func setupSlider() {
         slider.setThumbImage(UIImage(systemName: "circle.fill"), for: .normal)
         slider.addTarget(self, action: #selector(sliderValueChanged(_:)), for: .valueChanged)
-        NotificationCenter.default.addObserver(self, selector: #selector(self.finishedPlaying), name: NSNotification.Name.AVPlayerItemDidPlayToEndTime, object: playerItem)
+        NotificationCenter.default.addObserver(self, selector: #selector(self.finishedPlaying), name: NSNotification.Name.AVPlayerItemDidPlayToEndTime, object: audiobookService?.playerItem)
     }
 }
+
