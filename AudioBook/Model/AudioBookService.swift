@@ -7,66 +7,95 @@
 
 import Foundation
 import AVFoundation
+import Combine
 
-class AudioBookService {
+struct PlayerState {
+    var progress: Float
+    var duration: Float
+    var rate: Float
+    var playerIndex: Int = 0
+    var time: Float64
+}
+
+protocol AudioServiceProtocol {
+    var stateValue: PlayerState? { get }
+    var statePublisher: AnyPublisher<PlayerState?, Never> { get }
+    var player: AVPlayer { get }
+    
+    func playNext()
+    func playPrevious()
+    func rewind()
+    func fastForward()
+    func timeObserve(closure: @escaping () -> ())
+    func removeTimeObserver()
+}
+
+class AudioService: AudioServiceProtocol {
     
     let seekDurationTen: Float64 = 10
     let seekDurationFive: Float64 = 5
-    var playerIndex: Int
-    
-    let chapters: [AudioBookChapter]
+    let urls: [URL]
     var player: AVPlayer
     var playerItem: AVPlayerItem
-    let seconds: Float64
-    var currentSeconds: Float64
-    var time: Float64
+//    let seconds: Float64
+//    var currentSeconds: Float64
     var timeObserver: Any?
     
-    init?(chapters: [AudioBookChapter]) {
-        self.chapters = chapters
-        self.playerIndex = 0
+    private let stateSubject = CurrentValueSubject<PlayerState?, Never>(nil)
+    
+    var stateValue: PlayerState? {
+        stateSubject.value
+    }
+    
+    var statePublisher: AnyPublisher<PlayerState?, Never> {
+        stateSubject.eraseToAnyPublisher()
+    }
+
+    init?(urls: [URL]) {
+        self.urls = urls
         
-        
-        guard let url = Bundle.main.url(forResource: chapters[playerIndex].name, withExtension: "mp3") else {
-            return nil
-        }
-        
-        let playerItem = AVPlayerItem(url: url)
+        let playerItem = AVPlayerItem(url: urls.first!)
         self.player = AVPlayer(playerItem: playerItem)
         self.playerItem = playerItem
         
-        let duration: CMTime = playerItem.asset.duration
-        self.seconds = CMTimeGetSeconds(duration)
+//        let duration: CMTime = playerItem.asset.duration
+//        self.seconds = CMTimeGetSeconds(duration)
+//
+//        let currentDuration = playerItem.currentTime()
+//        self.currentSeconds = CMTimeGetSeconds(currentDuration)
         
-        let currentDuration = playerItem.currentTime()
-        self.currentSeconds = CMTimeGetSeconds(currentDuration)
+//        self.time = CMTimeGetSeconds(self.player.currentTime())
         
-        self.time = CMTimeGetSeconds(self.player.currentTime())
+        player.addPeriodicTimeObserver(forInterval: CMTimeMakeWithSeconds(1, preferredTimescale: 1), queue: DispatchQueue.main) { (CMTime) in
+            
+//            self.stateSubject.send(<#T##input: PlayerState?##PlayerState?#>)
+        }
     }
     
     
     func playNext() {
-        if playerIndex == 0 || playerIndex < 2 {
-            playerIndex += 1
+        if stateSubject.value!.playerIndex != 0 || stateSubject.value!.playerIndex > 0 {
+            stateSubject.value?.playerIndex -= 1
         }
-        guard let url = Bundle.main.url(forResource: chapters[playerIndex].name, withExtension: "mp3") else {
-            return
-        }
-        let playerItem = AVPlayerItem(url: url)
+        
+        
+        
+        let playerItem = AVPlayerItem(url: URL.urlChapter[stateSubject.value!.playerIndex])
         player = AVPlayer(playerItem: playerItem)
         
         player.play()
     }
     
     func playPrevious() {
-        if playerIndex != 0 || playerIndex > 0 {
-            playerIndex -= 1
-        }
-        guard let url = Bundle.main.url(forResource: chapters[playerIndex].name, withExtension: "mp3") else {
-            return
+        if stateSubject.value!.playerIndex != 0 || stateSubject.value!.playerIndex > 0 {
+            stateSubject.value?.playerIndex -= 1
         }
         
-        let playerItem = AVPlayerItem(url: url)
+//        guard let url = URL(string: chapters[stateSubject.value!.playerIndex].name) else {
+//            return
+//        }
+        
+        let playerItem = AVPlayerItem(url: URL.urlChapter[stateSubject.value!.playerIndex])
         player = AVPlayer(playerItem: playerItem)
         
         player.play()
@@ -100,7 +129,7 @@ class AudioBookService {
         let interval = CMTimeMakeWithSeconds(1, preferredTimescale: 1)
         player.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [self] (cmtime)  in
             if player.currentItem?.status == .readyToPlay {
-                self.time = CMTimeGetSeconds(player.currentTime())
+                stateSubject.value?.time = CMTimeGetSeconds(player.currentTime())
             } else if player.currentItem?.status == .unknown {
                 removeTimeObserver()
             }
@@ -114,5 +143,5 @@ class AudioBookService {
             player.removeTimeObserver(timeObserver)
         }
     }
+    
 }
-
