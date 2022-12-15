@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		739C7070294A15370091326B /* AudioBookService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 739C706F294A15370091326B /* AudioBookService.swift */; };
+		739C7072294A316A0091326B /* String.swift in Sources */ = {isa = PBXBuildFile; fileRef = 739C7071294A316A0091326B /* String.swift */; };
 		73C2AB592940BE3A00866BF2 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73C2AB582940BE3A00866BF2 /* AppDelegate.swift */; };
 		73C2AB5B2940BE3A00866BF2 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73C2AB5A2940BE3A00866BF2 /* SceneDelegate.swift */; };
 		73C2AB5D2940BE3A00866BF2 /* AudioBookViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73C2AB5C2940BE3A00866BF2 /* AudioBookViewController.swift */; };
@@ -16,12 +18,14 @@
 		73C2AB6D2940E2AD00866BF2 /* firstChapter.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 73C2AB6C2940E2AD00866BF2 /* firstChapter.mp3 */; };
 		73C2AB6F2940E2B500866BF2 /* secondChapter.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 73C2AB6E2940E2B500866BF2 /* secondChapter.mp3 */; };
 		73C2AB712940E2BD00866BF2 /* thirdChapter.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 73C2AB702940E2BD00866BF2 /* thirdChapter.mp3 */; };
-		73C2AB752941A7F100866BF2 /* AudioBook.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73C2AB742941A7F100866BF2 /* AudioBook.swift */; };
+		73C2AB752941A7F100866BF2 /* AudioBookChaper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73C2AB742941A7F100866BF2 /* AudioBookChaper.swift */; };
 		73C2AB782942088F00866BF2 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 73C2AB772942088F00866BF2 /* ComposableArchitecture */; };
 		73C50F412942631B00077A64 /* TimeInterval.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73C50F402942631B00077A64 /* TimeInterval.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		739C706F294A15370091326B /* AudioBookService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioBookService.swift; sourceTree = "<group>"; };
+		739C7071294A316A0091326B /* String.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = String.swift; sourceTree = "<group>"; };
 		73C2AB552940BE3A00866BF2 /* AudioBook.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AudioBook.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		73C2AB582940BE3A00866BF2 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		73C2AB5A2940BE3A00866BF2 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -33,7 +37,7 @@
 		73C2AB6C2940E2AD00866BF2 /* firstChapter.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = firstChapter.mp3; sourceTree = "<group>"; };
 		73C2AB6E2940E2B500866BF2 /* secondChapter.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = secondChapter.mp3; sourceTree = "<group>"; };
 		73C2AB702940E2BD00866BF2 /* thirdChapter.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = thirdChapter.mp3; sourceTree = "<group>"; };
-		73C2AB742941A7F100866BF2 /* AudioBook.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioBook.swift; sourceTree = "<group>"; };
+		73C2AB742941A7F100866BF2 /* AudioBookChaper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioBookChaper.swift; sourceTree = "<group>"; };
 		73C50F402942631B00077A64 /* TimeInterval.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeInterval.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -94,7 +98,8 @@
 		73C50F3E29424BDC00077A64 /* Model */ = {
 			isa = PBXGroup;
 			children = (
-				73C2AB742941A7F100866BF2 /* AudioBook.swift */,
+				73C2AB742941A7F100866BF2 /* AudioBookChaper.swift */,
+				739C706F294A15370091326B /* AudioBookService.swift */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -103,6 +108,7 @@
 			isa = PBXGroup;
 			children = (
 				73C50F402942631B00077A64 /* TimeInterval.swift */,
+				739C7071294A316A0091326B /* String.swift */,
 			);
 			path = Extensions;
 			sourceTree = "<group>";
@@ -207,7 +213,9 @@
 				73C2AB5D2940BE3A00866BF2 /* AudioBookViewController.swift in Sources */,
 				73C50F412942631B00077A64 /* TimeInterval.swift in Sources */,
 				73C2AB592940BE3A00866BF2 /* AppDelegate.swift in Sources */,
-				73C2AB752941A7F100866BF2 /* AudioBook.swift in Sources */,
+				739C7070294A15370091326B /* AudioBookService.swift in Sources */,
+				739C7072294A316A0091326B /* String.swift in Sources */,
+				73C2AB752941A7F100866BF2 /* AudioBookChaper.swift in Sources */,
 				73C2AB5B2940BE3A00866BF2 /* SceneDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
