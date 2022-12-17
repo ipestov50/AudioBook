@@ -6,14 +6,9 @@
 //
 
 import UIKit
-
 import ComposableArchitecture
 import Combine
-
-import UIKit
-//import AVFoundation
-import ComposableArchitecture
-import Combine
+import CoreMedia
 
 class AudioBookViewController: UIViewController {
     
@@ -31,25 +26,18 @@ class AudioBookViewController: UIViewController {
     @IBOutlet var goForwardTenButton: UIButton!
     @IBOutlet var forwardEndButton: UIButton!
     @IBOutlet var currentTimeLabel: UILabel!
-    
-    let string = [URL(string: "")!]
-    
-    private let stateSubject = CurrentValueSubject<PlayerState?, Never>(nil)
-    
-    var stateValue: PlayerState? {
-        stateSubject.value
-    }
+
     
     var service: AudioServiceProtocol = AudioService(urls: URL.urlChapter)!
+    var subscriptions = Set<AnyCancellable>()
     
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
+    required init?(coder aDecoder: NSCoder) {
+        super.init(coder: aDecoder)
     }
     
     open override func viewDidLoad() {
         super.viewDidLoad()
         setupDuration()
-        //        setupUIButton()
         setupSlider()
         bookImageView.layer.cornerRadius = 8
         speedButton.layer.cornerRadius = 8
@@ -57,91 +45,46 @@ class AudioBookViewController: UIViewController {
     }
     
     func setupDuration() {
-        service.statePublisher.sink { state in
+        service.statePublisher.sink { [self] state in
+            audioDurationLabel.text = "".stringFromTimeInterval(interval: state!.totalDuration)
             slider.minimumValue = 0
-            audioDurationLabel.text = "".stringFromTimeInterval(interval: service.stateValue?.duration)
-            currentTimeLabel.text = "".stringFromTimeInterval(interval: service.statePublisher.currentSeconds)
-            slider.maximumValue = Float(service.statePublisher.seconds)
+            slider.maximumValue = Float(state!.totalDuration)
+            slider.value = Float(state!.progress)
+            currentTimeLabel.text = "".stringFromTimeInterval(interval: state!.progress)
             slider.isContinuous = true
-            if service.statePublisher.player.currentItem?.status == .readyToPlay {
-                let time: Float64 = service.stateValue?.progress
-                self.slider.value = Float(time)
-                self.currentTimeLabel.text = "".stringFromTimeInterval(interval: time)
-            }
-            
-            let playbackLikelyToKeepUp = service.player.currentItem?.isPlaybackLikelyToKeepUp
-            if playbackLikelyToKeepUp == false {
-                print("IsBuffering")
-            } else {
-                self.playButton.isHidden = false
-            }
-        }
-        .store(in: &stateSubject)
+            currentTimeLabel.text = "".stringFromTimeInterval(interval: state!.progress)
+        }.store(in: &subscriptions)
     }
     
     @IBAction func playButtonTapped(_ sender: UIButton) {
-        
-        if service.player.rate == 0 {
-            service.player.play()
-            playButton.setImage(UIImage(systemName: "pause.fill"), for: .normal)
-        } else {
-            service.player.pause()
-            playButton.setImage(UIImage(systemName: "play.fill"), for: .normal)
-        }
+        service.play()
+        service.statePublisher.sink { [self] state in
+            switch state?.isPlaying {
+            case true:
+                playButton.setImage(UIImage(systemName: "pause.fill"), for: .normal)
+            default:
+                playButton.setImage(UIImage(systemName: "play.fill"), for: .normal)
+            }
+        }.store(in: &subscriptions)
     }
     
     @IBAction func speedButtonTapped() {
-//        guard let audiobookService = audiobookService else { return }
-        switch service.stateValue!.rate {
-        case 1..<2:
-            stateSubject.value?.rate += 0.25
-            speedButton.setTitle("Speed \(stateSubject.value!.rate)x", for: .normal)
-            playButton.setImage(UIImage(systemName: "pause.fill"), for: .normal)
-        case 2:
-            stateSubject.value?.rate = 0.25
-            speedButton.setTitle("Speed \(stateSubject.value!.rate)x", for: .normal)
-            playButton.setImage(UIImage(systemName: "pause.fill"), for: .normal)
-        default:
-            stateSubject.value?.rate += 0.25
-            speedButton.setTitle("Speed \(stateSubject.value!.rate)x", for: .normal)
-            playButton.setImage(UIImage(systemName: "pause.fill"), for: .normal)
-        }
+        service.setSpeed()
+        service.statePublisher.sink { [self] state in
+            speedButton.setTitle("Speed \(state!.rate)x", for: .normal)
+            print(state?.rate)
+        }.store(in: &subscriptions)
     }
     
     @IBAction func forwardEndButtonTapped() {
-//        guard let audiobookService = audiobookService else { return }
         service.playNext()
-        
-        keypointLabel.text = "KEY POINT \(service.stateValue!.playerIndex+1) OF 3"
-        playButton.setImage(UIImage(systemName: "pause.fill"), for: .normal)
-        audioDurationLabel.text = "".stringFromTimeInterval(interval: TimeInterval(service.stateValue!.progress))
-        slider.maximumValue = Float(service.stateValue!.duration)
-        slider.isContinuous = true
-        
-        service.timeObserve { [self] in
-            self.slider.value = Float(stateSubject.value!.time)
-            self.currentTimeLabel.text = "".stringFromTimeInterval(interval: stateSubject.value!.time)
-        }
+        service.statePublisher.sink { [self] state in
+            keypointLabel.text = "KEY POINT \(state!.playerIndex+1) OF 3"
+        }.store(in: &subscriptions)
     }
     
     @IBAction func backwardEndButtonTapped() {
-//        guard let audiobookService = audiobookService else { return }
         service.playPrevious()
-        
-        playButton.setImage(UIImage(systemName: "pause.fill"), for: .normal)
-        keypointLabel.text = "KEY POINT \(stateSubject.value!.playerIndex+1) OF 3"
-//        let duration = audiobookService.player.currentItem!.asset.duration
-//        let seconds: Float64 = CMTimeGetSeconds(duration)
-//        audioDurationLabel.text = "".stringFromTimeInterval(interval: seconds)
-//        slider.maximumValue = Float(seconds)
-        slider.isContinuous = true
-        
-        service.timeObserve { [self] in
-            self.slider.value = Float(stateSubject.value!.time)
-//            self.currentTimeLabel.text = "".stringFromTimeInterval(interval: audiobookService.time)
-        }
-        service.removeTimeObserver()
-        
     }
     
     @IBAction func seekBackWards(_ sender: AnyObject) {
@@ -155,14 +98,14 @@ class AudioBookViewController: UIViewController {
     }
     
     @objc func sliderValueChanged(_ slider: UISlider) {
-//        guard let audiobookService = audiobookService else { return }
-//        let seconds : Int64 = Int64(slider.value)
-//        let targetTime:CMTime = CMTimeMake(value: seconds, timescale: 1)
+        let seconds: Int64 = Int64(slider.value)
+        let targetTime: CMTime = CMTimeMakeWithSeconds(Float64(seconds), preferredTimescale: 1)
 //        service.player.seek(to: targetTime)
-        if service.player.rate == 0 {
-            playButton.setImage(UIImage(systemName: "pause.fill"), for: .normal)
-            service.player.play()
-        }
+//        
+//        if service.player.rate == 0 {
+//            playButton.setImage(UIImage(systemName: "pause.fill"), for: .normal)
+//            service.player.play()
+//        }
     }
     
     @objc func finishedPlaying(_ myNotification: NSNotification) {
@@ -172,6 +115,5 @@ class AudioBookViewController: UIViewController {
     func setupSlider() {
         slider.setThumbImage(UIImage(systemName: "circle.fill"), for: .normal)
         slider.addTarget(self, action: #selector(sliderValueChanged(_:)), for: .valueChanged)
-//        NotificationCenter.default.addObserver(self, selector: #selector(self.finishedPlaying), name: NSNotification.Name.AVPlayerItemDidPlayToEndTime, object: service.playerItem)
     }
 }

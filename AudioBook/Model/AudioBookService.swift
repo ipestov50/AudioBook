@@ -10,38 +10,39 @@ import AVFoundation
 import Combine
 
 struct PlayerState {
-    var progress: Float
-    var duration: Float
-    var rate: Float
+    var progress: Double = 0.0
+    var totalDuration: Double = 0.0
     var playerIndex: Int = 0
-    var time: Float64
+    var rate: Float = 0.0
+    var isPlaying: Bool = true
 }
 
 protocol AudioServiceProtocol {
     var stateValue: PlayerState? { get }
     var statePublisher: AnyPublisher<PlayerState?, Never> { get }
-    var player: AVPlayer { get }
+    
     
     func playNext()
     func playPrevious()
     func rewind()
     func fastForward()
-    func timeObserve(closure: @escaping () -> ())
+    func timeObserve()
     func removeTimeObserver()
+    func setSpeed()
+    func play()
 }
 
 class AudioService: AudioServiceProtocol {
-    
-    let seekDurationTen: Float64 = 10
-    let seekDurationFive: Float64 = 5
     let urls: [URL]
     var player: AVPlayer
-    var playerItem: AVPlayerItem
-//    let seconds: Float64
-//    var currentSeconds: Float64
+    let seekDurationTen: Float64 = 10
+    let seekDurationFive: Float64 = 5
     var timeObserver: Any?
     
     private let stateSubject = CurrentValueSubject<PlayerState?, Never>(nil)
+    
+//    let controlStatusChanged = PassthroughSubject<AVPlayer,Never>()
+//    private var itemObservation: NSKeyValueObservation?
     
     var stateValue: PlayerState? {
         stateSubject.value
@@ -54,50 +55,54 @@ class AudioService: AudioServiceProtocol {
     init?(urls: [URL]) {
         self.urls = urls
         
-        let playerItem = AVPlayerItem(url: urls.first!)
+        self.stateSubject.value = PlayerState()
+        
+        guard let chapter = Bundle.main.url(forResource: URL.chapters[stateSubject.value!.playerIndex], withExtension: "mp3") else { return nil }
+        
+        let playerItem = AVPlayerItem(url: chapter)
+        
         self.player = AVPlayer(playerItem: playerItem)
-        self.playerItem = playerItem
         
-//        let duration: CMTime = playerItem.asset.duration
-//        self.seconds = CMTimeGetSeconds(duration)
+        let total: CMTime = player.currentItem!.asset.duration
+        stateSubject.value?.totalDuration = CMTimeGetSeconds(total)
+        
+//        self.itemObservation = player.observe(\.rate, changeHandler: { player, change in
 //
-//        let currentDuration = playerItem.currentTime()
-//        self.currentSeconds = CMTimeGetSeconds(currentDuration)
+//            self.controlStatusChanged.send(player)
+//        })
         
-//        self.time = CMTimeGetSeconds(self.player.currentTime())
-        
-        player.addPeriodicTimeObserver(forInterval: CMTimeMakeWithSeconds(1, preferredTimescale: 1), queue: DispatchQueue.main) { (CMTime) in
+        player.addPeriodicTimeObserver(forInterval: CMTimeMakeWithSeconds(1, preferredTimescale: 1), queue: .main) { [self] (CMTime) in
             
-//            self.stateSubject.send(<#T##input: PlayerState?##PlayerState?#>)
+            let currentTime: CMTime = playerItem.currentTime()
+            stateSubject.value?.progress = CMTimeGetSeconds(currentTime)
+            
+            self.stateSubject.send(stateValue)
+        }
+        
+    }
+    
+    func play() {
+        stateSubject.value?.isPlaying.toggle()
+        if stateSubject.value?.isPlaying == true {
+            player.play()
+        } else {
+            player.pause()
         }
     }
     
-    
     func playNext() {
-        if stateSubject.value!.playerIndex != 0 || stateSubject.value!.playerIndex > 0 {
-            stateSubject.value?.playerIndex -= 1
+        if stateSubject.value!.playerIndex == 0 || stateSubject.value!.playerIndex < 2 {
+            stateSubject.value!.playerIndex += 1
         }
-        
-        
-        
-        let playerItem = AVPlayerItem(url: URL.urlChapter[stateSubject.value!.playerIndex])
-        player = AVPlayer(playerItem: playerItem)
-        
+        timeObserve()
         player.play()
     }
     
     func playPrevious() {
         if stateSubject.value!.playerIndex != 0 || stateSubject.value!.playerIndex > 0 {
-            stateSubject.value?.playerIndex -= 1
+            stateSubject.value?.playerIndex -= 1   
         }
-        
-//        guard let url = URL(string: chapters[stateSubject.value!.playerIndex].name) else {
-//            return
-//        }
-        
-        let playerItem = AVPlayerItem(url: URL.urlChapter[stateSubject.value!.playerIndex])
-        player = AVPlayer(playerItem: playerItem)
-        
+        timeObserve()
         player.play()
     }
     
@@ -125,15 +130,33 @@ class AudioService: AudioServiceProtocol {
         }
     }
     
-    func timeObserve(closure: @escaping () -> ()) {
+    func setSpeed() {
+        stateSubject.value?.rate = player.rate
+        switch player.rate {
+        case 1..<2:
+            player.rate += 0.25
+        case 2:
+            player.rate = 0.25
+        default:
+            player.rate += 0.25
+        }
+    }
+    
+    func timeObserve() {
+        guard let chapter = Bundle.main.url(forResource: URL.chapters[stateSubject.value!.playerIndex], withExtension: "mp3") else { return  }
+        
+        let playerItem = AVPlayerItem(url: chapter)
+        
+        player = AVPlayer(playerItem: playerItem)
+        
         let interval = CMTimeMakeWithSeconds(1, preferredTimescale: 1)
-        player.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [self] (cmtime)  in
-            if player.currentItem?.status == .readyToPlay {
-                stateSubject.value?.time = CMTimeGetSeconds(player.currentTime())
-            } else if player.currentItem?.status == .unknown {
-                removeTimeObserver()
-            }
-            closure()
+        
+        player.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [self] (CMTime) in
+            
+            let currentTime: CMTime = playerItem.currentTime()
+            stateSubject.value?.progress = CMTimeGetSeconds(currentTime)
+            let total: CMTime = player.currentItem!.asset.duration
+            stateSubject.value?.totalDuration = CMTimeGetSeconds(total)
         }
     }
     
@@ -143,5 +166,4 @@ class AudioService: AudioServiceProtocol {
             player.removeTimeObserver(timeObserver)
         }
     }
-    
 }
