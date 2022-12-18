@@ -41,39 +41,33 @@ class AudioBookViewController: UIViewController {
         setupSlider()
         bookImageView.layer.cornerRadius = 8
         speedButton.layer.cornerRadius = 8
-        playButton.translatesAutoresizingMaskIntoConstraints = false
+        
     }
     
     func setupDuration() {
         service.statePublisher.sink { [self] state in
             audioDurationLabel.text = "".stringFromTimeInterval(interval: state!.totalDuration)
+            currentTimeLabel.text = "".stringFromTimeInterval(interval: state!.progress)
             slider.minimumValue = 0
             slider.maximumValue = Float(state!.totalDuration)
             slider.value = Float(state!.progress)
-            currentTimeLabel.text = "".stringFromTimeInterval(interval: state!.progress)
             slider.isContinuous = true
-            currentTimeLabel.text = "".stringFromTimeInterval(interval: state!.progress)
         }.store(in: &subscriptions)
     }
     
     @IBAction func playButtonTapped(_ sender: UIButton) {
         service.play()
-        service.statePublisher.sink { [self] state in
-            switch state?.isPlaying {
-            case true:
-                playButton.setImage(UIImage(systemName: "pause.fill"), for: .normal)
-            default:
-                playButton.setImage(UIImage(systemName: "play.fill"), for: .normal)
-            }
-        }.store(in: &subscriptions)
+        switch service.stateValue!.isPlaying {
+        case true:
+            playButton.setImage(UIImage(systemName: "pause.fill"), for: .normal)
+        default:
+            playButton.setImage(UIImage(systemName: "play.fill"), for: .normal)
+        }
     }
     
     @IBAction func speedButtonTapped() {
         service.setSpeed()
-        service.statePublisher.sink { [self] state in
-            speedButton.setTitle("Speed \(state!.rate)x", for: .normal)
-            print(state?.rate)
-        }.store(in: &subscriptions)
+        speedButton.setTitle("Speed \(service.stateValue!.rate)", for: .normal)
     }
     
     @IBAction func forwardEndButtonTapped() {
@@ -98,8 +92,13 @@ class AudioBookViewController: UIViewController {
     }
     
     @objc func sliderValueChanged(_ slider: UISlider) {
-        let seconds: Int64 = Int64(slider.value)
-        let targetTime: CMTime = CMTimeMakeWithSeconds(Float64(seconds), preferredTimescale: 1)
+        service.controlSliderValue {
+            playButton.setImage(UIImage(systemName: "pause.fill"), for: .normal)
+        }
+        print(slider.value)
+        
+//        let seconds: Int64 = Int64(slider.value)
+//        let targetTime: CMTime = CMTimeMakeWithSeconds(Float64(seconds), preferredTimescale: 1)
 //        service.player.seek(to: targetTime)
 //        
 //        if service.player.rate == 0 {

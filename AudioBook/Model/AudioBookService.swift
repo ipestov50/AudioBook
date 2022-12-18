@@ -14,13 +14,12 @@ struct PlayerState {
     var totalDuration: Double = 0.0
     var playerIndex: Int = 0
     var rate: Float = 0.0
-    var isPlaying: Bool = true
+    var isPlaying: Bool = false
 }
 
 protocol AudioServiceProtocol {
     var stateValue: PlayerState? { get }
     var statePublisher: AnyPublisher<PlayerState?, Never> { get }
-    
     
     func playNext()
     func playPrevious()
@@ -30,6 +29,7 @@ protocol AudioServiceProtocol {
     func removeTimeObserver()
     func setSpeed()
     func play()
+    func controlSliderValue(closure: () -> ())
 }
 
 class AudioService: AudioServiceProtocol {
@@ -70,7 +70,6 @@ class AudioService: AudioServiceProtocol {
 //
 //            self.controlStatusChanged.send(player)
 //        })
-        
         player.addPeriodicTimeObserver(forInterval: CMTimeMakeWithSeconds(1, preferredTimescale: 1), queue: .main) { [self] (CMTime) in
             
             let currentTime: CMTime = playerItem.currentTime()
@@ -78,11 +77,11 @@ class AudioService: AudioServiceProtocol {
             
             self.stateSubject.send(stateValue)
         }
-        
     }
     
     func play() {
         stateSubject.value?.isPlaying.toggle()
+
         if stateSubject.value?.isPlaying == true {
             player.play()
         } else {
@@ -110,7 +109,6 @@ class AudioService: AudioServiceProtocol {
         let playerCurrentTime = CMTimeGetSeconds(player.currentTime())
         var newTime = playerCurrentTime - seekDurationFive
         if newTime < 0 { newTime = 0 }
-        player.pause()
         let selectedTime: CMTime = CMTimeMake(value: Int64(newTime * 1000 as Float64), timescale: 1000)
         player.seek(to: selectedTime)
         player.play()
@@ -125,7 +123,6 @@ class AudioService: AudioServiceProtocol {
                 let selectedTime: CMTime = CMTimeMake(value: Int64(newTime * 1000 as Float64), timescale: 1000)
                 player.seek(to: selectedTime)
             }
-            player.pause()
             player.play()
         }
     }
@@ -144,16 +141,16 @@ class AudioService: AudioServiceProtocol {
     
     func timeObserve() {
         guard let chapter = Bundle.main.url(forResource: URL.chapters[stateSubject.value!.playerIndex], withExtension: "mp3") else { return  }
-        
+
         let playerItem = AVPlayerItem(url: chapter)
-        
+
         player = AVPlayer(playerItem: playerItem)
-        
+
         let interval = CMTimeMakeWithSeconds(1, preferredTimescale: 1)
         
         player.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [self] (CMTime) in
             
-            let currentTime: CMTime = playerItem.currentTime()
+            let currentTime: CMTime = player.currentTime()
             stateSubject.value?.progress = CMTimeGetSeconds(currentTime)
             let total: CMTime = player.currentItem!.asset.duration
             stateSubject.value?.totalDuration = CMTimeGetSeconds(total)
@@ -164,6 +161,20 @@ class AudioService: AudioServiceProtocol {
         DispatchQueue.main.async { [self] in
             guard let timeObserver = timeObserver else { return }
             player.removeTimeObserver(timeObserver)
+        }
+    }
+    
+    @objc func controlSliderValue(closure: () -> ()) {
+        let seconds: Int64 = Int64(stateSubject.value!.progress)
+        let targetTime: CMTime = CMTimeMakeWithSeconds(Float64(seconds), preferredTimescale: 1)
+//        let seconds: Int64 = Int64(slider.value)
+//        let targetTime: CMTime = CMTimeMakeWithSeconds(Float64(seconds), preferredTimescale: 1)
+        player.seek(to: targetTime)
+        
+        if player.rate == 0 {
+//            playButton.setImage(UIImage(systemName: "pause.fill"), for: .normal)
+            player.play()
+            closure()
         }
     }
 }
