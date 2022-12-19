@@ -68,6 +68,7 @@ class AudioBookViewController: UIViewController {
     @IBAction func speedButtonTapped() {
         service.setSpeed()
         speedButton.setTitle("Speed \(service.stateValue!.rate)", for: .normal)
+        
     }
     
     @IBAction func forwardEndButtonTapped() {
@@ -75,6 +76,7 @@ class AudioBookViewController: UIViewController {
         service.statePublisher.sink { [self] state in
             keypointLabel.text = "KEY POINT \(state!.playerIndex+1) OF 3"
         }.store(in: &subscriptions)
+        playButton.setImage(UIImage(systemName: "pause.fill"), for: .normal)
     }
     
     @IBAction func backwardEndButtonTapped() {
@@ -95,7 +97,7 @@ class AudioBookViewController: UIViewController {
         service.controlSliderValue {
             playButton.setImage(UIImage(systemName: "pause.fill"), for: .normal)
         }
-        print(slider.value)
+        
         
 //        let seconds: Int64 = Int64(slider.value)
 //        let targetTime: CMTime = CMTimeMakeWithSeconds(Float64(seconds), preferredTimescale: 1)

@@ -21,6 +21,7 @@ protocol AudioServiceProtocol {
     var stateValue: PlayerState? { get }
     var statePublisher: AnyPublisher<PlayerState?, Never> { get }
     
+    func play()
     func playNext()
     func playPrevious()
     func rewind()
@@ -28,7 +29,6 @@ protocol AudioServiceProtocol {
     func timeObserve()
     func removeTimeObserver()
     func setSpeed()
-    func play()
     func controlSliderValue(closure: () -> ())
 }
 
@@ -38,12 +38,10 @@ class AudioService: AudioServiceProtocol {
     let seekDurationTen: Float64 = 10
     let seekDurationFive: Float64 = 5
     var timeObserver: Any?
+    var strongReference = Set<AnyCancellable>()
     
     private let stateSubject = CurrentValueSubject<PlayerState?, Never>(nil)
-    
-//    let controlStatusChanged = PassthroughSubject<AVPlayer,Never>()
-//    private var itemObservation: NSKeyValueObservation?
-    
+
     var stateValue: PlayerState? {
         stateSubject.value
     }
@@ -66,17 +64,16 @@ class AudioService: AudioServiceProtocol {
         let total: CMTime = player.currentItem!.asset.duration
         stateSubject.value?.totalDuration = CMTimeGetSeconds(total)
         
-//        self.itemObservation = player.observe(\.rate, changeHandler: { player, change in
-//
-//            self.controlStatusChanged.send(player)
-//        })
+        stateSubject.value?.rate = player.rate
+//        stateSubject.value!.rate = 1
+        
         player.addPeriodicTimeObserver(forInterval: CMTimeMakeWithSeconds(1, preferredTimescale: 1), queue: .main) { [self] (CMTime) in
             
             let currentTime: CMTime = playerItem.currentTime()
             stateSubject.value?.progress = CMTimeGetSeconds(currentTime)
-            
-            self.stateSubject.send(stateValue)
         }
+        
+        stateSubject.send(stateValue)
     }
     
     func play() {
@@ -128,14 +125,13 @@ class AudioService: AudioServiceProtocol {
     }
     
     func setSpeed() {
-        stateSubject.value?.rate = player.rate
         switch player.rate {
-        case 1..<2:
+        case 0.25..<2:
             player.rate += 0.25
-        case 2:
-            player.rate = 0.25
+            stateSubject.value!.rate = player.rate
         default:
-            player.rate += 0.25
+            player.rate = 0.25
+            stateSubject.value!.rate = player.rate
         }
     }
     
@@ -165,14 +161,12 @@ class AudioService: AudioServiceProtocol {
     }
     
     @objc func controlSliderValue(closure: () -> ()) {
-        let seconds: Int64 = Int64(stateSubject.value!.progress)
-        let targetTime: CMTime = CMTimeMakeWithSeconds(Float64(seconds), preferredTimescale: 1)
-//        let seconds: Int64 = Int64(slider.value)
-//        let targetTime: CMTime = CMTimeMakeWithSeconds(Float64(seconds), preferredTimescale: 1)
-        player.seek(to: targetTime)
+        
+        let publisher = CurrentValueSubject<CMTime, Never>(CMTimeMakeWithSeconds(Float64(stateValue!.progress), preferredTimescale: 1))
+        
+        
         
         if player.rate == 0 {
-//            playButton.setImage(UIImage(systemName: "pause.fill"), for: .normal)
             player.play()
             closure()
         }
