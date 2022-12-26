@@ -13,7 +13,6 @@ struct AudioBookChapter {
 }
 
 extension URL {
-    
     static var urlChapter: [URL] = [
         Bundle.main.url(forResource: "firstChapter", withExtension: "mp3")!,
         Bundle.main.url(forResource: "secondChapter", withExtension: "mp3")!,

@@ -8,9 +8,10 @@
 import UIKit
 import ComposableArchitecture
 import Combine
-import CoreMedia
 
 class AudioBookViewController: UIViewController {
+    var viewStore: ViewStoreOf<Feature>!
+    var subscriptions = Set<AnyCancellable>()
     
     @IBOutlet var bookImageView: UIImageView!
     @IBOutlet var keypointLabel: UILabel!
@@ -18,7 +19,6 @@ class AudioBookViewController: UIViewController {
     @IBOutlet var slider: UISlider!
     @IBOutlet var speedButton: UIButton!
     @IBOutlet var mediaButtonStackView: UIStackView!
-    
     @IBOutlet var audioDurationLabel: UILabel!
     @IBOutlet var backwardEndButton: UIButton!
     @IBOutlet var goBackwardFiveButton: UIButton!
@@ -26,79 +26,103 @@ class AudioBookViewController: UIViewController {
     @IBOutlet var goForwardTenButton: UIButton!
     @IBOutlet var forwardEndButton: UIButton!
     @IBOutlet var currentTimeLabel: UILabel!
-
     
-    var service: AudioServiceProtocol = AudioService(urls: URL.urlChapter)!
-    var subscriptions = Set<AnyCancellable>()
-    
-    required init?(coder aDecoder: NSCoder) {
-        super.init(coder: aDecoder)
-    }
-    
-    open override func viewDidLoad() {
+    override func viewDidLoad() {
         super.viewDidLoad()
         setupDuration()
         setupSlider()
         bookImageView.layer.cornerRadius = 8
         speedButton.layer.cornerRadius = 8
         
+        viewStore.publisher
+            .map({ "\($0)" })
+            .sink(receiveValue: { print("Receive value", $0) })
+            .store(in: &subscriptions)
+        
+        
     }
     
     func setupDuration() {
-        service.statePublisher.sink { [self] state in
-            audioDurationLabel.text = "".stringFromTimeInterval(interval: state!.totalDuration)
-            currentTimeLabel.text = "".stringFromTimeInterval(interval: state!.progress)
-            slider.minimumValue = 0
-            slider.maximumValue = Float(state!.totalDuration)
-            slider.value = Float(state!.progress)
-            slider.isContinuous = true
-        }.store(in: &subscriptions)
+        viewStore.send(.setupDuration)
+        
+        audioDurationLabel.text = "".stringFromTimeInterval(interval: viewStore.player.totalDuration)
+        
+        
+        
+        
+        
+        
+//        viewStore.publisher
+//            .sink { [self] state in
+//                audioDurationLabel.text = "".stringFromTimeInterval(interval: state.player.totalDuration)
+//                currentTimeLabel.text = "".stringFromTimeInterval(interval: state.player.progress)
+//                slider.minimumValue = 0
+//                slider.maximumValue = Float(state.player.totalDuration)
+//                slider.value = Float(state.player.progress)
+//                slider.isContinuous = true
+//            }.store(in: &subscriptions)
+        
+//        service.statePublisher.sink { [self] state in
+//            audioDurationLabel.text = "".stringFromTimeInterval(interval: state!.totalDuration)
+//            currentTimeLabel.text = "".stringFromTimeInterval(interval: state!.progress)
+//            slider.minimumValue = 0
+//            slider.maximumValue = Float(state!.totalDuration)
+//            slider.value = Float(state!.progress)
+//            slider.isContinuous = true
+//        }.store(in: &subscriptions)
     }
     
     @IBAction func playButtonTapped(_ sender: UIButton) {
-        service.play()
-        switch service.stateValue!.isPlaying {
+        viewStore.send(.play)
+        
+        switch viewStore.player.isPlaying {
         case true:
             playButton.setImage(UIImage(systemName: "pause.fill"), for: .normal)
         default:
             playButton.setImage(UIImage(systemName: "play.fill"), for: .normal)
         }
-    }
-    
-    @IBAction func speedButtonTapped() {
-        service.setSpeed()
-        speedButton.setTitle("Speed \(service.stateValue!.rate)", for: .normal)
         
     }
     
+    @IBAction func speedButtonTapped() {
+        viewStore.send(.changeSpeed)
+        
+        speedButton.setTitle("Speed \(viewStore.player.rate)", for: .normal)
+    }
+    
     @IBAction func forwardEndButtonTapped() {
-        service.playNext()
-        service.statePublisher.sink { [self] state in
-            keypointLabel.text = "KEY POINT \(state!.playerIndex+1) OF 3"
-        }.store(in: &subscriptions)
+        viewStore.send(.playNext)
+        
+        keypointLabel.text = "KEY POINT \(viewStore.player.chapterIndex+1) OF 3"
+        audioDurationLabel.text = "".stringFromTimeInterval(interval: viewStore.player.totalDuration)
         playButton.setImage(UIImage(systemName: "pause.fill"), for: .normal)
     }
     
     @IBAction func backwardEndButtonTapped() {
-        service.playPrevious()
+        viewStore.send(.playPrevious)
+        
+        keypointLabel.text = "KEY POINT \(viewStore.player.chapterIndex+1) OF 3"
+        audioDurationLabel.text = "".stringFromTimeInterval(interval: viewStore.player.totalDuration)
+        playButton.setImage(UIImage(systemName: "pause.fill"), for: .normal)
+        
     }
     
     @IBAction func seekBackWards(_ sender: AnyObject) {
-        service.rewind()
+        viewStore.send(.rewind)
+        
         playButton.setImage(UIImage(systemName: "pause.fill"), for: .normal)
     }
     
     @IBAction func seekForward(_ sender: AnyObject) {
-        service.fastForward()
+        viewStore.send(.goForward)
+        
         playButton.setImage(UIImage(systemName: "pause.fill"), for: .normal)
     }
     
     @objc func sliderValueChanged(_ slider: UISlider) {
-        service.controlSliderValue {
-            playButton.setImage(UIImage(systemName: "pause.fill"), for: .normal)
-        }
-        
-        
+//        service.controlSliderValue {
+//            playButton.setImage(UIImage(systemName: "pause.fill"), for: .normal)
+//        }
 //        let seconds: Int64 = Int64(slider.value)
 //        let targetTime: CMTime = CMTimeMakeWithSeconds(Float64(seconds), preferredTimescale: 1)
 //        service.player.seek(to: targetTime)
@@ -118,3 +142,4 @@ class AudioBookViewController: UIViewController {
         slider.addTarget(self, action: #selector(sliderValueChanged(_:)), for: .valueChanged)
     }
 }
+

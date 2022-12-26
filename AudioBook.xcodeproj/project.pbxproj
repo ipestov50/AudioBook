@@ -21,6 +21,8 @@
 		73C2AB752941A7F100866BF2 /* AudioBookChaper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73C2AB742941A7F100866BF2 /* AudioBookChaper.swift */; };
 		73C2AB782942088F00866BF2 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 73C2AB772942088F00866BF2 /* ComposableArchitecture */; };
 		73C50F412942631B00077A64 /* TimeInterval.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73C50F402942631B00077A64 /* TimeInterval.swift */; };
+		73F2B3EE2958CE48002BB721 /* Player.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73F2B3ED2958CE48002BB721 /* Player.swift */; };
+		73F2B3F12959F7B4002BB721 /* Feature.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73F2B3F02959F7B4002BB721 /* Feature.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -39,6 +41,8 @@
 		73C2AB702940E2BD00866BF2 /* thirdChapter.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = thirdChapter.mp3; sourceTree = "<group>"; };
 		73C2AB742941A7F100866BF2 /* AudioBookChaper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioBookChaper.swift; sourceTree = "<group>"; };
 		73C50F402942631B00077A64 /* TimeInterval.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeInterval.swift; sourceTree = "<group>"; };
+		73F2B3ED2958CE48002BB721 /* Player.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Player.swift; sourceTree = "<group>"; };
+		73F2B3F02959F7B4002BB721 /* Feature.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Feature.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -58,6 +62,7 @@
 			children = (
 				73C2AB572940BE3A00866BF2 /* AudioBook */,
 				73C2AB562940BE3A00866BF2 /* Products */,
+				73C50F422942632B00077A64 /* AudioMP3 */,
 				BAF22F4B97626A5AC9CB7059 /* Pods */,
 			);
 			sourceTree = "<group>";
@@ -73,7 +78,8 @@
 		73C2AB572940BE3A00866BF2 /* AudioBook */ = {
 			isa = PBXGroup;
 			children = (
-				73C50F422942632B00077A64 /* AudioMP3 */,
+				73F2B3EF2959F7A8002BB721 /* Store */,
+				73F2B3EC2958CE39002BB721 /* Service */,
 				73C50F3F2942630A00077A64 /* Extensions */,
 				73C50F3E29424BDC00077A64 /* Model */,
 				73C50F3D29424BC800077A64 /* Screen */,
@@ -99,7 +105,7 @@
 			isa = PBXGroup;
 			children = (
 				73C2AB742941A7F100866BF2 /* AudioBookChaper.swift */,
-				739C706F294A15370091326B /* AudioBookService.swift */,
+				73F2B3ED2958CE48002BB721 /* Player.swift */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -121,6 +127,22 @@
 				73C2AB702940E2BD00866BF2 /* thirdChapter.mp3 */,
 			);
 			path = AudioMP3;
+			sourceTree = "<group>";
+		};
+		73F2B3EC2958CE39002BB721 /* Service */ = {
+			isa = PBXGroup;
+			children = (
+				739C706F294A15370091326B /* AudioBookService.swift */,
+			);
+			path = Service;
+			sourceTree = "<group>";
+		};
+		73F2B3EF2959F7A8002BB721 /* Store */ = {
+			isa = PBXGroup;
+			children = (
+				73F2B3F02959F7B4002BB721 /* Feature.swift */,
+			);
+			path = Store;
 			sourceTree = "<group>";
 		};
 		BAF22F4B97626A5AC9CB7059 /* Pods */ = {
@@ -214,7 +236,9 @@
 				73C50F412942631B00077A64 /* TimeInterval.swift in Sources */,
 				73C2AB592940BE3A00866BF2 /* AppDelegate.swift in Sources */,
 				739C7070294A15370091326B /* AudioBookService.swift in Sources */,
+				73F2B3EE2958CE48002BB721 /* Player.swift in Sources */,
 				739C7072294A316A0091326B /* String.swift in Sources */,
+				73F2B3F12959F7B4002BB721 /* Feature.swift in Sources */,
 				73C2AB752941A7F100866BF2 /* AudioBookChaper.swift in Sources */,
 				73C2AB5B2940BE3A00866BF2 /* SceneDelegate.swift in Sources */,
 			);
@@ -367,7 +391,6 @@
 				INFOPLIST_FILE = AudioBook/Info.plist;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
-				INFOPLIST_KEY_UIMainStoryboardFile = Main;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -394,7 +417,6 @@
 				INFOPLIST_FILE = AudioBook/Info.plist;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
-				INFOPLIST_KEY_UIMainStoryboardFile = Main;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
