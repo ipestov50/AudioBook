@@ -26,6 +26,8 @@ struct Feature: ReducerProtocol {
         case goForward
         case changeSpeed
         case trackSeconds
+
+        case fetchedSeconds(Double)
     }
     
     func reduce(into state: inout State, action: Action) -> EffectPublisher<Action, Never> {
@@ -90,12 +92,19 @@ struct Feature: ReducerProtocol {
             return .none
             
         case .trackSeconds:
-            service!.player.addPeriodicTimeObserver(forInterval: CMTime(seconds: 1, preferredTimescale: 1), queue: .main, using: { _ in
-                let time = service!.player.currentTime()
-                service!.progress.send(CMTimeGetSeconds(time))
-                print(service!.progress.value)
-            })
-            
+            return .run { send in
+                service!.player.addPeriodicTimeObserver(forInterval: CMTime(seconds: 1, preferredTimescale: 1), queue: .main, using: { _ in
+                    // https://stackoverflow.com/questions/70329835/call-to-main-actor-isolated-instance-method-xxx-in-a-synchronous-nonisolated-con
+                    do { Task { @MainActor in send(.fetchedSeconds(CMTimeGetSeconds(service!.player.currentTime()))) } }
+
+                    // Так тоже будет работать, но лучше как пример выше:
+                    // send(.fetchedSeconds(service!.progress.value))
+                })
+            }
+
+        case .fetchedSeconds(let value):
+            state.player.progress = value
+            print("FetchedSeconds = \(value)")
             return .none
         }
     }

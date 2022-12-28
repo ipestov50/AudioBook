@@ -10,7 +10,8 @@ import ComposableArchitecture
 import Combine
 
 class AudioBookViewController: UIViewController {
-    var viewStore: ViewStoreOf<Feature>!
+    // FIXME: - Если это убрать - не работает, как по другому сделать - ХЗ
+    var viewStore: ViewStoreOf<Feature> = .init(.init(initialState: Feature.State(), reducer: Feature()))
     var subscriptions = Set<AnyCancellable>()
     
     @IBOutlet var bookImageView: UIImageView!
@@ -33,21 +34,28 @@ class AudioBookViewController: UIViewController {
         setupSlider()
         bookImageView.layer.cornerRadius = 8
         speedButton.layer.cornerRadius = 8
-        
+
+        // TODO: - Вообще ХЗ, правильно ли вешать слушателей в этом методе, можно попробовать в init()
+
         viewStore.publisher
             .map({ "\($0)" })
             .sink(receiveValue: { print("Receive value", $0) })
             .store(in: &subscriptions)
-        
+
+        viewStore.publisher
+            .map { return String().stringFromTimeInterval(interval: $0.player.totalDuration) }
+            .assign(to: \.text, on: audioDurationLabel)
+            .store(in: &subscriptions)
+
+        viewStore.publisher
+            .map { return String().stringFromTimeInterval(interval: $0.player.progress) }
+            .assign(to: \.text, on: currentTimeLabel)
+            .store(in: &subscriptions)
     }
     
     func setupDuration() {
         viewStore.send(.setupDuration)
-        
-        audioDurationLabel.text = "".stringFromTimeInterval(interval: viewStore.player.totalDuration)
-        
-        currentTimeLabel.text = "".stringFromTimeInterval(interval: <#T##TimeInterval#>)
-        
+
 //        viewStore.publisher
 //            .sink { [self] state in
 //                audioDurationLabel.text = "".stringFromTimeInterval(interval: state.player.totalDuration)
