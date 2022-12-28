@@ -39,7 +39,6 @@ class AudioBookViewController: UIViewController {
             .sink(receiveValue: { print("Receive value", $0) })
             .store(in: &subscriptions)
         
-        
     }
     
     func setupDuration() {
@@ -47,10 +46,7 @@ class AudioBookViewController: UIViewController {
         
         audioDurationLabel.text = "".stringFromTimeInterval(interval: viewStore.player.totalDuration)
         
-        
-        
-        
-        
+        currentTimeLabel.text = "".stringFromTimeInterval(interval: <#T##TimeInterval#>)
         
 //        viewStore.publisher
 //            .sink { [self] state in

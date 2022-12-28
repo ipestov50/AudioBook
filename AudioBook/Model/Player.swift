@@ -9,6 +9,7 @@ import Foundation
 import Combine
 
 struct Player: Equatable {
+    
     var progress: Double
     var totalDuration: Double
     var chapterIndex: Int

@@ -12,6 +12,7 @@ import Combine
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     
     var window: UIWindow?
+    var cancellable = Set<AnyCancellable>()
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         
@@ -24,6 +25,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         let audioBookViewController = storyboard.instantiateViewController(withIdentifier: "vc") as! AudioBookViewController
         
         audioBookViewController.viewStore = ViewStore(Store(initialState: Feature.State(), reducer: Feature()))
+        
         
         
         window?.rootViewController = audioBookViewController

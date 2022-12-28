@@ -12,7 +12,6 @@ import AVFoundation
 
 struct Feature: ReducerProtocol {
     let service = Service(urls: URL.urlChapter)
-    var progress = CurrentValueSubject<Double, Never>(0)
     
     struct State: Equatable {
         var player = Player.mock
@@ -26,9 +25,10 @@ struct Feature: ReducerProtocol {
         case rewind
         case goForward
         case changeSpeed
+        case trackSeconds
     }
- 
-    func reduce(into state: inout State, action: Action) -> EffectTask<Action> {
+    
+    func reduce(into state: inout State, action: Action) -> EffectPublisher<Action, Never> {
         switch action {
         case .setupDuration:
             let total: CMTime = service!.player.currentItem!.asset.duration
@@ -41,31 +41,30 @@ struct Feature: ReducerProtocol {
             
             switch state.player.isPlaying {
             case true:
-                service!.player.addPeriodicTimeObserver(forInterval: CMTime(seconds: 1, preferredTimescale: 1), queue: .main, using: { _ in
-                    let time = service!.player.currentTime()
-                    progress.send(CMTimeGetSeconds(time))
-                })
                 service!.player.play()
-                
             default:
                 service!.player.pause()
                 
             }
-            return .none
+            return .task {
+                .trackSeconds
+            }
             
         case .playNext:
             if state.player.chapterIndex == 0 || state.player.chapterIndex < 2 {
                 state.player.chapterIndex += 1
-                trackPlayback(chapterIndex: state.player.chapterIndex, completion: {})
+                trackPlayback(chapterIndex: state.player.chapterIndex)
                 let total: CMTime = service!.player.currentItem!.asset.duration
                 state.player.totalDuration = CMTimeGetSeconds(total)
             }
-            return .none
+            return .task {
+                .trackSeconds
+            }
             
         case .playPrevious:
             if state.player.chapterIndex != 0 || state.player.chapterIndex > 0 {
                 state.player.chapterIndex -= 1
-                trackPlayback(chapterIndex: state.player.chapterIndex, completion: {})
+                trackPlayback(chapterIndex: state.player.chapterIndex)
                 let total: CMTime = service!.player.currentItem!.asset.duration
                 state.player.totalDuration = CMTimeGetSeconds(total)
             }
@@ -89,27 +88,21 @@ struct Feature: ReducerProtocol {
                 state.player.rate = service!.player.rate
             }
             return .none
+            
+        case .trackSeconds:
+            service!.player.addPeriodicTimeObserver(forInterval: CMTime(seconds: 1, preferredTimescale: 1), queue: .main, using: { _ in
+                let time = service!.player.currentTime()
+                service!.progress.send(CMTimeGetSeconds(time))
+                print(service!.progress.value)
+            })
+            
+            return .none
         }
     }
     
-    func trackPlayback(chapterIndex: Int, completion: @escaping () -> ()) {
-        guard let service = service else { return }
-        
-        let chapter = URL.urlChapter[chapterIndex]
-        
-        let playerItem = AVPlayerItem(url: chapter)
-        
-        service.player = AVPlayer(playerItem: playerItem)
-        
-        let interval = CMTimeMakeWithSeconds(1, preferredTimescale: 1)
-        
-        service.player.addPeriodicTimeObserver(forInterval: interval, queue: .main, using: { _ in
-            completion()
-        })
-        service.player.play()
-        
-    }
-    
+}
+
+extension Feature {
     func seekToSelectedTime(seconds: Double, operatorName: String) {
         let playerCurrentTime = CMTimeGetSeconds(service!.player.currentTime())
         var newTime: Double = 0.0
@@ -125,5 +118,17 @@ struct Feature: ReducerProtocol {
         service!.player.seek(to: time)
         service!.player.play()
     }
+    
+    func trackPlayback(chapterIndex: Int) {
+        guard let service = service else { return }
+        
+        let chapter = URL.urlChapter[chapterIndex]
+        
+        let playerItem = AVPlayerItem(url: chapter)
+        
+        service.player = AVPlayer(playerItem: playerItem)
+        
+        service.player.play()
+    }
+    
 }
-
